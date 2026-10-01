@@ -1,109 +1,88 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiniSuperMarket.API.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MiniSuperMarket.API.Controllers
 {
-    [Route("api/[controller]")] // Định tuyến cơ sở: /api/categories
+    public class CategoryDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Bắt buộc có Token hợp lệ mới gọi được
     public class CategoriesController : ControllerBase
     {
-
-        // Dữ liệu mẫu lưu tạm trên bộ nhớ RAM (In-Memory) phục vụ kiểm thử khi chưa có Database
-        private static readonly List<Category> _categories = new() {
-            new Category { CategoryId = 1, CategoryName = "Bánh kẹo & Đồ ăn vặt", Description = "Snack, bánh quy, kẹo dẻo" },
-            new Category { CategoryId = 2, CategoryName = "Nước giải khát & Trà", Description = "Nước ngọt, nước khoáng, trà" },
-            new Category { CategoryId = 3, CategoryName = "Sữa & Sản phẩm từ sữa", Description = "Sữa tươi, sữa chua, phô mai" },
-            new Category { CategoryId = 4, CategoryName = "Mì gói & Thực phẩm ăn liền", Description = "Mì ăn liền, phở khô, cháo gói" },
-            new Category { CategoryId = 5, CategoryName = "Gia vị & Dầu ăn", Description = "Nước mắm, hạt nêm, dầu thực vật" }
-        };
-
-        // 1. READ: Lấy toàn bộ danh sách nhóm hàng (GET /api/categories)
-        [HttpGet]
-        public IActionResult GetAll()
+        // Dữ liệu in-memory (giả lập Buổi 1). Buổi 3 sẽ thay bằng SQL Server.
+        private static readonly List<CategoryDto> _categories = new()
         {
-            // Trả về mã 200 OK kèm theo danh sách JSON
-            return Ok(_categories);
-        }
+            new CategoryDto { Id = 1, Name = "Đồ uống",     Description = "Nước ngọt, nước suối, trà" },
+            new CategoryDto { Id = 2, Name = "Bánh kẹo",    Description = "Bánh snack, kẹo, socola" },
+            new CategoryDto { Id = 3, Name = "Gia vị",      Description = "Muối, đường, nước mắm" }
+        };
+        private static int _nextId = 4;
 
-        // 2. READ: Lấy chi tiết một nhóm hàng theo ID (GET /api/categories/{id})
-        [HttpGet("{id}")]
+        // GET /api/categories  (Admin + Cashier)
+        [HttpGet]
+        public IActionResult GetAll() => Ok(_categories);
+
+        // GET /api/categories/1
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
-            var cat = _categories.FirstOrDefault(c => c.CategoryId == id);
-            if (cat == null)
-            {
-                // Trả về mã lỗi 404 nếu không tìm thấy ID tương ứng
-                return NotFound(new { message = "Không tìm thấy nhóm hàng!" });
-            }
-            return Ok(cat);
+            var item = _categories.FirstOrDefault(c => c.Id == id);
+            return item == null ? NotFound() : Ok(item);
         }
 
-        // 3. SEARCH: Tìm kiếm nhóm hàng theo từ khóa qua Query String (GET /api/categories/search?keyword=...)
-        [HttpGet("search")]
-        public IActionResult Search([FromQuery] string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                return BadRequest(new { message = "Vui lòng nhập từ khóa!" });
-            }
-            // Lọc danh sách theo tên chứa từ khóa (không phân biệt chữ hoa/thường)
-            var result = _categories
-                .Where(c => c.CategoryName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            return Ok(result);
-        }
-
-        // 4. CREATE: Thêm mới nhóm hàng (POST /api/categories)
+        // POST /api/categories
         [HttpPost]
-        public IActionResult Create([FromBody] Category newCat)
+        public IActionResult Create([FromBody] CategoryDto dto)
         {
-            if (string.IsNullOrWhiteSpace(newCat.CategoryName))
-            {
-                return BadRequest(new { message = "Tên không được trống!" });
-            }
-            // Tự động tăng ID tiếp theo
-            newCat.CategoryId = _categories.Count > 0 ? _categories.Max(c => c.CategoryId) + 1 : 1;
-            _categories.Add(newCat);
-
-            // Trả về mã 201 Created kèm đường dẫn dẫn tới bản ghi mới tạo
-            return CreatedAtAction(nameof(GetById), new { id = newCat.CategoryId }, newCat);
+            dto.Id = _nextId++;
+            _categories.Add(dto);
+            return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
         }
 
-        // 5. UPDATE: Cập nhật thông tin nhóm hàng (PUT /api/categories/{id})
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Category updateCat)
+        // PUT /api/categories/1
+        [HttpPut("{id:int}")]
+        public IActionResult Update(int id, [FromBody] CategoryDto dto)
         {
-            var cat = _categories.FirstOrDefault(c => c.CategoryId == id);
-            if (cat == null)
-            {
-                return NotFound(new { message = "Không tìm thấy nhóm hàng cần sửa!" });
-            }
-
-            // Kiểm tra dữ liệu hợp lệ trước khi cập nhật (tương tự Create)
-            if (string.IsNullOrWhiteSpace(updateCat.CategoryName))
-            {
-                return BadRequest(new { message = "Tên không được trống!" });
-            }
-
-            // Cập nhật giá trị mới
-            cat.CategoryName = updateCat.CategoryName;
-            cat.Description = updateCat.Description;
-
-            // Trả về mã 204 NoContent biểu thị cập nhật thành công nhưng không cần trả về dữ liệu mới
+            var item = _categories.FirstOrDefault(c => c.Id == id);
+            if (item == null) return NotFound();
+            item.Name = dto.Name;
+            item.Description = dto.Description;
             return NoContent();
         }
 
-        // 6. DELETE: Xóa nhóm hàng theo ID (DELETE /api/categories/{id})
-        [HttpDelete("{id}")]
+        // DELETE /api/categories/1  -> CHỈ ADMIN
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public IActionResult Delete(int id)
         {
-            var cat = _categories.FirstOrDefault(c => c.CategoryId == id);
-            if (cat == null)
-            {
-                return NotFound(new { message = "Không tìm thấy nhóm hàng cần xóa!" });
-            }
-            _categories.Remove(cat);
+            var item = _categories.FirstOrDefault(c => c.Id == id);
+            if (item == null) return NotFound();
+            _categories.Remove(item);
             return NoContent();
+        }
+
+        // ===== Endpoint kiểm tra phân quyền (Phần 3 của bài) =====
+
+        // Chỉ Admin
+        [HttpGet("admin-dashboard")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetAdminDashboard()
+        {
+            return Ok(new { message = "Chào mừng Admin! Bạn có toàn quyền quản trị hệ thống siêu thị mini." });
+        }
+
+        // Admin + Cashier
+        [HttpGet("staff-pos")]
+        [Authorize(Roles = "Admin,Cashier")]
+        public IActionResult GetStaffPos()
+        {
+            return Ok(new { message = "Màn hình POS Thu ngân sẵn sàng phục vụ bán hàng." });
         }
     }
 }
