@@ -1,73 +1,111 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MiniSuperMarket.API.Data;
+using MiniSuperMarket.API.Models;
 
 namespace MiniSuperMarket.API.Controllers
 {
-    public class CategoryDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-    }
-
     [Route("api/[controller]")]
     [ApiController]
     [Authorize] // Bắt buộc có Token hợp lệ mới gọi được
     public class CategoriesController : ControllerBase
     {
-        // Dữ liệu in-memory (giả lập Buổi 1). Buổi 3 sẽ thay bằng SQL Server.
-        private static readonly List<CategoryDto> _categories = new()
-        {
-            new CategoryDto { Id = 1, Name = "Đồ uống",     Description = "Nước ngọt, nước suối, trà" },
-            new CategoryDto { Id = 2, Name = "Bánh kẹo",    Description = "Bánh snack, kẹo, socola" },
-            new CategoryDto { Id = 3, Name = "Gia vị",      Description = "Muối, đường, nước mắm" }
-        };
-        private static int _nextId = 4;
+        private readonly SupermarketDbContext _context;
 
-        // GET /api/categories  (Admin + Cashier)
+        // Tiêm DbContext thông qua Constructor Injection
+        public CategoriesController(SupermarketDbContext context)
+        {
+            _context = context;
+        }
+
+        // 1. READ: GET /api/categories
         [HttpGet]
-        public IActionResult GetAll() => Ok(_categories);
+        public async Task<IActionResult> GetAll()
+        {
+            var list = await _context.Categories.AsNoTracking()
+                .OrderBy(c => c.CategoryId)
+                .ToListAsync();
+            return Ok(list);
+        }
 
-        // GET /api/categories/1
+        // 2. READ: GET /api/categories/1
         [HttpGet("{id:int}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var item = _categories.FirstOrDefault(c => c.Id == id);
-            return item == null ? NotFound() : Ok(item);
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+                return NotFound(new { message = "Không tìm thấy nhóm hàng trong CSDL!" });
+            return Ok(category);
         }
 
-        // POST /api/categories
+        // 3. SEARCH: GET /api/categories/search?keyword=...
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return BadRequest(new { message = "Vui lòng nhập từ khóa tìm kiếm!" });
+
+            var kw = keyword.Trim();
+            // EF Core dịch Contains thành SQL: WHERE CategoryName LIKE N'%kw%'
+            var result = await _context.Categories.AsNoTracking()
+                .Where(c => c.CategoryName.Contains(kw))
+                .OrderBy(c => c.CategoryId)
+                .ToListAsync();
+            return Ok(result);
+        }
+
+        // 4. CREATE: POST /api/categories
         [HttpPost]
-        public IActionResult Create([FromBody] CategoryDto dto)
+        public async Task<IActionResult> Create([FromBody] Category newCat)
         {
-            dto.Id = _nextId++;
-            _categories.Add(dto);
-            return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            newCat.CategoryId = 0; // Để SQL Server tự sinh Identity
+            newCat.CategoryName = newCat.CategoryName.Trim();
+
+            _context.Categories.Add(newCat);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetById), new { id = newCat.CategoryId }, newCat);
         }
 
-        // PUT /api/categories/1
+        // 5. UPDATE: PUT /api/categories/1
         [HttpPut("{id:int}")]
-        public IActionResult Update(int id, [FromBody] CategoryDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] Category updateCat)
         {
-            var item = _categories.FirstOrDefault(c => c.Id == id);
-            if (item == null) return NotFound();
-            item.Name = dto.Name;
-            item.Description = dto.Description;
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (updateCat.CategoryId != 0 && updateCat.CategoryId != id)
+                return BadRequest(new { message = "Mã nhóm hàng trong đường dẫn và nội dung không khớp!" });
+
+            var cat = await _context.Categories.FindAsync(id);
+            if (cat == null)
+                return NotFound(new { message = "Không tìm thấy nhóm hàng cần sửa!" });
+
+            cat.CategoryName = updateCat.CategoryName.Trim();
+            cat.Description = updateCat.Description;
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
-        // DELETE /api/categories/1  -> CHỈ ADMIN
+        // 6. DELETE: DELETE /api/categories/1  -> CHỈ ADMIN
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var item = _categories.FirstOrDefault(c => c.Id == id);
-            if (item == null) return NotFound();
-            _categories.Remove(item);
+            var cat = await _context.Categories.FindAsync(id);
+            if (cat == null)
+                return NotFound(new { message = "Không tìm thấy nhóm hàng cần xóa!" });
+
+            // Không cho xóa nhóm hàng đang có sản phẩm (bảo toàn dữ liệu)
+            if (await _context.Products.AnyAsync(p => p.CategoryId == id))
+                return Conflict(new { message = "Nhóm hàng đang có sản phẩm, không thể xóa!" });
+
+            _context.Categories.Remove(cat);
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
-        // ===== Endpoint kiểm tra phân quyền (Phần 3 của bài) =====
+        // ===== Endpoint kiểm tra phân quyền (Buổi 2) =====
 
         // Chỉ Admin
         [HttpGet("admin-dashboard")]

@@ -5,7 +5,10 @@ namespace MiniSuperMarket.WinForm
         // JWT Token nhận từ Server
         public static string JwtToken { get; set; } = string.Empty;
 
-        // Vai trò người dùng: Admin / Cashier
+        // Tên đăng nhập hiện tại
+        public static string CurrentUsername { get; set; } = string.Empty;
+
+        // Vai trò người dùng: Admin / Cashier / Warehouse
         public static string CurrentRole { get; set; } = string.Empty;
 
         // Địa chỉ API - chỉnh port nếu khác (xem launchSettings.json của API)
