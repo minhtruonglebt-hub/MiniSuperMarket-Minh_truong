@@ -33,11 +33,10 @@ Migration tạo 15 tài khoản, 15 nhóm hàng, 20 sản phẩm, 15 khách hàn
 ## Cấu hình và khởi chạy
 
 1. Cài .NET 8 SDK và SQL Server hoặc SQL Server Express.
-2. Mở `MiniSuperMarket.API/appsettings.json`, chỉnh `ConnectionStrings:DefaultConnection` theo SQL Server trên máy.
-3. Đặt khóa JWT dài ít nhất 32 byte trong user secrets hoặc biến môi trường `JwtSettings__Secret`. Ví dụ ở thư mục API:
+2. Mặc định `MiniSuperMarket.API/appsettings.json` dùng SQL Server LocalDB (`(localdb)\\MSSQLLocalDB`). Nếu dùng SQL Server khác, sửa `ConnectionStrings:DefaultConnection`, ví dụ `Server=localhost;Database=ThienAnSupermarketDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true` hoặc thay `localhost` bằng `.` cho SQL Express.
+3. Đặt khóa JWT dài ít nhất 32 byte trong user secrets hoặc biến môi trường `JwtSettings__Secret`. Dự án đã có `UserSecretsId`; tại thư mục API, chạy:
 
    ```powershell
-   dotnet user-secrets init
    dotnet user-secrets set "JwtSettings:Secret" "ThayBangChuoiBiMatDaiHon32ByteCuaBan"
    ```
 

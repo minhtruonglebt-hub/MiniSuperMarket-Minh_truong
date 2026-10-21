@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <!-- Dùng .NET 10 thì đổi thành net10.0 và nâng version các gói lên 10.x -->
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>e952205e-438f-4e4b-885f-644c3a2af3fb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
