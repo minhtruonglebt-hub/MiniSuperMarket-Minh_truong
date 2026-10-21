@@ -1,60 +1,55 @@
- 🛒 HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI (MINISUPERMARKET SYSTEM)
-> **Môn học:** Lập trình Ứng dụng .NET Core (Mã môn: 229162)  
-> **Buổi thực hành:** Buổi 1 - Xây dựng Web API quản lý danh mục và kết nối WinForms Client (CRUD)
+# 🛒 HỆ THỐNG QUẢN LÝ BÁN HÀNG — CỬA HÀNG BÁCH HÓA TỔNG HỢP THIÊN ÂN
 
----
+> **Môn học:** Lập trình Ứng dụng .NET Core (Mã môn: 229162)
+> **Tiến độ:** Buổi 1 (CRUD) → Buổi 2 (JWT & phân quyền) → **Buổi 3 (SQL Server + EF Core Code-First)**
 
-## 🏗️ 1. Mô hình Kiến trúc Hệ thống (Client - Server)
-Dự án được xây dựng theo mô hình phân tầng hiện đại, tách biệt hoàn toàn giữa Backend và Frontend:
-* **`MiniSupermarket.API` (Backend):** Dự án ASP.NET Core Web API chịu trách nhiệm xử lý logic nghiệp vụ, quản lý dữ liệu và cung cấp các RESTful API chuẩn hóa.
-* **`MiniSupermarket.WinForms` (Frontend Client):** Ứng dụng Windows Forms đóng vai trò là máy trạm POS tại quầy, sử dụng `HttpClient` để gọi dữ liệu từ API qua mạng và hiển thị trực quan lên `DataGridView`.
+## 1. Kiến trúc (Client - Server)
+* **`MiniSuperMarket.API`** (Backend): ASP.NET Core Web API (.NET 8), EF Core, JWT Bearer, Swagger.
+* **`MiniSuperMarket.WinForm`** (Frontend): Windows Forms (.NET 8), `HttpClient` gọi API, tự gắn Bearer Token.
 
----
-
-## 🛠️ 2. Công nghệ Sử dụng
-* **Ngôn ngữ:** C# (.NET 8.0)
-* **Backend:** ASP.NET Core Web API, Controllers, In-Memory Data, LINQ
-* **Frontend:** Windows Forms (.NET 8.0), `System.Net.Http.Json`
-* **Công cụ kiểm thử:** Swagger UI
-
----
-
-## 📂 3. Cấu trúc Solution
+## 2. Cấu trúc Solution
 ```text
-MiniSupermarketSystem/
-│
-├── MiniSupermarket.API/          # Dự án Web API (Backend)
-│   ├── Controllers/              # Chứa CategoriesController (CRUD & Search)
-│   ├── Models/                   # Chứa lớp thực thể Category.cs
-│   └── Program.cs                # Cấu hình dịch vụ và Middleware
-│
-└── MiniSupermarket.WinForms/     # Dự án Windows Forms (Frontend Client)
-    └── FormCategoryManagement.cs # Giao diện quản lý danh mục CRUD
+ThienAn-Supermarket/
+├── MiniSuperMarket.API/
+│   ├── Controllers/   AuthController, CategoriesController (EF Core), CustomersController (EF Core), RolesController (In-Memory)
+│   ├── Models/        Category, Product, Customer, Role
+│   ├── Data/          SupermarketDbContext (DbSet + Data Seeding)
+│   ├── Program.cs     JWT + Swagger + AddDbContext
+│   └── appsettings.json   ConnectionStrings + JwtSettings
+└── MiniSuperMarket.WinForm/
+    ├── FormLogin                 Đăng nhập, lưu token vào SessionManager
+    ├── FormCategoryManagement    CRUD + Tìm kiếm nhóm hàng (mở được Khách hàng, Vai trò)
+    ├── FormCustomerManagement    CRUD + Tìm kiếm khách hàng (Admin, Cashier)
+    ├── FormRoleManagement        CRUD vai trò (chỉ Admin)
+    ├── ApiClientService          HttpClient dùng chung + xử lý lỗi 401/403
+    └── SessionManager            JwtToken, CurrentUsername, CurrentRole, ApiBaseUrl
+```
 
+## 3. Tạo Database (Buổi 3)
+1. Kiểm tra chuỗi kết nối `DefaultConnection` trong `MiniSuperMarket.API/appsettings.json`.
+   * Máy cá nhân (Windows Authentication): giữ nguyên mặc định.
+   * Máy phòng thực hành dùng tài khoản `sa`: trong SSMS chạy `ALTER LOGIN sa WITH PASSWORD = '123456';` rồi đổi chuỗi thành:
+     `Server=.;Database=ThienAnSupermarketDb;User Id=sa;Password=123456;MultipleActiveResultSets=true;TrustServerCertificate=True`
+   * SQL Express: đổi `Server=.\\SQLEXPRESS`.
+2. Mở **Tools → NuGet Package Manager → Package Manager Console**, chọn *Default project* = `MiniSuperMarket.API`, chạy:
+   ```powershell
+   Add-Migration InitialCreateDatabase
+   Update-Database
+   ```
+   Kết quả: tạo CSDL `ThienAnSupermarketDb` với 3 bảng `Categories` (5 dòng mẫu), `Products`, `Customers` (3 dòng mẫu).
+3. Nếu lỗi gói NuGet: `dotnet nuget locals all --clear` rồi restore lại.
 
-🚀 4. Hướng dẫn Chạy và Kiểm thử Dự án
-Bước 1: Chạy phía Backend (Web API)
-Mở Solution bằng Visual Studio 2022.
+## 4. Chạy và kiểm thử
+1. Chuột phải Solution → *Configure Startup Projects* → chọn **Multiple startup projects**: API và WinForm đều *Start* (API chạy trước).
+2. Swagger: `POST /api/auth/login` (`admin`/`123456` hoặc `cashier`/`123456`) → copy token → nút **Authorize** → dán `Bearer <token>`.
+3. WinForm: đăng nhập, thử Thêm/Sửa/Xóa/Tìm kiếm nhóm hàng và khách hàng. Tắt cả hai ứng dụng rồi mở lại: dữ liệu vẫn còn.
 
+| Chức năng | Admin | Cashier |
+|---|---|---|
+| Xem/Thêm/Sửa nhóm hàng | ✅ | ✅ |
+| Xóa nhóm hàng | ✅ | ❌ 403 |
+| Khách hàng (CRUD) | ✅ | ✅ |
+| Vai trò (CRUD) | ✅ | ❌ 403 |
 
-Nhấp chuột phải vào project MiniSupermarket.API chọn Set as Startup Project.
-
-
-Nhấn F5 để chạy. Trình duyệt sẽ tự động mở giao diện Swagger UI để kiểm tra các phương thức GET, POST, PUT, DELETE.
-
-
-Bước 2: Chạy phía Frontend (WinForms Client)
-Đảm bảo cổng (Port) trong ApiClientService hoặc HttpClient của WinForms khớp với cổng https://localhost:XXXXX của Web API đang chạy.
-
-Nhấp chuột phải vào project MiniSupermarket.WinForms chọn Debug -> Start new instance.
-
-Thử nghiệm các chức năng: Tải danh sách, Thêm mới, Sửa, Xóa và Tìm kiếm nhóm hàng.
-
-👨‍💻 5. Tác giả
-Họ tên sinh viên:Lê Minh Trường
-
-
-Mã sinh viên: 2124110110
-
-
-Lớp học phần:CCQ2411D
+## 5. Tác giả
+Họ tên sinh viên: Lê Minh Trường — Mã sinh viên: 2124110110 — Lớp học phần: CCQ2411D

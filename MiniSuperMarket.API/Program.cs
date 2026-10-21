@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using MiniSuperMarket.API.Data;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -25,12 +27,29 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+// Cho phép bỏ trống các trường có giá trị mặc định (vd: MembershipRank = "Chuẩn");
+// các trường bắt buộc đã có [Required] tường minh trên Model
+builder.Services.AddControllers(options =>
+{
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+});
+
+// ===== Buổi 3: Đăng ký DbContext (SQL Server) qua Dependency Injection =====
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<SupermarketDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
 builder.Services.AddEndpointsApiExplorer();
 
 // ===== Swagger có nút Authorize để dán token =====
 builder.Services.AddSwaggerGen(c =>
 {
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Bách hóa Tổng hợp Thiên Ân - API Quản lý Bán hàng",
+        Version = "v1",
+        Description = "Backend ASP.NET Core + EF Core + SQL Server"
+    });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

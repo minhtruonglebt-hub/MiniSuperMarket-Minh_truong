@@ -63,7 +63,7 @@ namespace MiniSuperMarket.WinForm
             MaximizeBox = false;
             Name = "FormLogin";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Đăng nhập - MiniSupermarket";
+            Text = "Đăng nhập - Bách hóa Tổng hợp Thiên Ân";
             ResumeLayout(false);
             PerformLayout();
         }

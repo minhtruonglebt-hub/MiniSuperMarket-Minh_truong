@@ -40,6 +40,7 @@ namespace MiniSuperMarket.WinForm
 
                     SessionManager.JwtToken = doc.RootElement.GetProperty("token").GetString() ?? string.Empty;
                     SessionManager.CurrentRole = doc.RootElement.GetProperty("role").GetString() ?? string.Empty;
+                    SessionManager.CurrentUsername = username;
 
                     MessageBox.Show($"Đăng nhập thành công với quyền: {SessionManager.CurrentRole}",
                         "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
