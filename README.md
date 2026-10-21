@@ -1,55 +1,74 @@
-# 🛒 HỆ THỐNG QUẢN LÝ BÁN HÀNG — CỬA HÀNG BÁCH HÓA TỔNG HỢP THIÊN ÂN
+# Hệ thống quản lý bán hàng và tồn kho Thiên Ân
 
-> **Môn học:** Lập trình Ứng dụng .NET Core (Mã môn: 229162)
-> **Tiến độ:** Buổi 1 (CRUD) → Buổi 2 (JWT & phân quyền) → **Buổi 3 (SQL Server + EF Core Code-First)**
+Đề tài môn Lập trình Ứng dụng .NET Core: xây dựng hệ thống quản lý bán hàng cho Cửa hàng Bách hóa Tổng hợp Thiên Ân bằng ASP.NET Core Web API, Windows Forms và Entity Framework Core.
 
-## 1. Kiến trúc (Client - Server)
-* **`MiniSuperMarket.API`** (Backend): ASP.NET Core Web API (.NET 8), EF Core, JWT Bearer, Swagger.
-* **`MiniSuperMarket.WinForm`** (Frontend): Windows Forms (.NET 8), `HttpClient` gọi API, tự gắn Bearer Token.
+## Thành phần
 
-## 2. Cấu trúc Solution
-```text
-ThienAn-Supermarket/
-├── MiniSuperMarket.API/
-│   ├── Controllers/   AuthController, CategoriesController (EF Core), CustomersController (EF Core), RolesController (In-Memory)
-│   ├── Models/        Category, Product, Customer, Role
-│   ├── Data/          SupermarketDbContext (DbSet + Data Seeding)
-│   ├── Program.cs     JWT + Swagger + AddDbContext
-│   └── appsettings.json   ConnectionStrings + JwtSettings
-└── MiniSuperMarket.WinForm/
-    ├── FormLogin                 Đăng nhập, lưu token vào SessionManager
-    ├── FormCategoryManagement    CRUD + Tìm kiếm nhóm hàng (mở được Khách hàng, Vai trò)
-    ├── FormCustomerManagement    CRUD + Tìm kiếm khách hàng (Admin, Cashier)
-    ├── FormRoleManagement        CRUD vai trò (chỉ Admin)
-    ├── ApiClientService          HttpClient dùng chung + xử lý lỗi 401/403
-    └── SessionManager            JwtToken, CurrentUsername, CurrentRole, ApiBaseUrl
-```
+- `MiniSuperMarket.API`: API .NET 8, EF Core, SQL Server, JWT và Swagger.
+- `MiniSuperMarket.WinForm`: ứng dụng WinForms .NET 8 theo kiến trúc một cửa sổ, có sidebar và vùng hiển thị màn hình nghiệp vụ.
+- `MiniSuperMarket.API/Data/Migrations`: migration tạo sáu bảng cùng dữ liệu mẫu.
 
-## 3. Tạo Database (Buổi 3)
-1. Kiểm tra chuỗi kết nối `DefaultConnection` trong `MiniSuperMarket.API/appsettings.json`.
-   * Máy cá nhân (Windows Authentication): giữ nguyên mặc định.
-   * Máy phòng thực hành dùng tài khoản `sa`: trong SSMS chạy `ALTER LOGIN sa WITH PASSWORD = '123456';` rồi đổi chuỗi thành:
-     `Server=.;Database=ThienAnSupermarketDb;User Id=sa;Password=123456;MultipleActiveResultSets=true;TrustServerCertificate=True`
-   * SQL Express: đổi `Server=.\\SQLEXPRESS`.
-2. Mở **Tools → NuGet Package Manager → Package Manager Console**, chọn *Default project* = `MiniSuperMarket.API`, chạy:
+## Chức năng Buổi 4
+
+- Đăng nhập nhân viên từ bảng `Users`; mật khẩu demo được lưu bằng ASP.NET Core Identity PasswordHasher.
+- Khung `FormMainShell` nhúng các màn hình con và áp dụng quyền theo vai trò.
+- Admin: danh mục, sản phẩm, khách hàng, POS, báo cáo doanh thu và quản lý tài khoản.
+- Cashier: POS và khách hàng.
+- Warehouse: danh mục và sản phẩm/tồn kho.
+- POS tra cứu barcode, nhận diện khách hàng, xác nhận tiền khách đưa, ghi hóa đơn, giảm tồn kho và cộng điểm thưởng.
+- Báo cáo doanh thu chỉ dành cho Admin; API cũng chặn truy cập sai vai trò.
+
+## Tài khoản mẫu
+
+Tất cả tài khoản seed trong Buổi 4 dùng mật khẩu `123456`.
+
+| Tài khoản | Vai trò |
+|---|---|
+| `admin01` | Admin |
+| `cashier01` | Cashier |
+| `ware01` | Warehouse |
+
+Migration tạo 15 tài khoản, 15 nhóm hàng, 20 sản phẩm, 15 khách hàng, 15 hóa đơn và 30 dòng chi tiết hóa đơn.
+
+## Cấu hình và khởi chạy
+
+1. Cài .NET 8 SDK và SQL Server hoặc SQL Server Express.
+2. Mở `MiniSuperMarket.API/appsettings.json`, chỉnh `ConnectionStrings:DefaultConnection` theo SQL Server trên máy.
+3. Đặt khóa JWT dài ít nhất 32 byte trong user secrets hoặc biến môi trường `JwtSettings__Secret`. Ví dụ ở thư mục API:
+
    ```powershell
-   Add-Migration InitialCreateDatabase
+   dotnet user-secrets init
+   dotnet user-secrets set "JwtSettings:Secret" "ThayBangChuoiBiMatDaiHon32ByteCuaBan"
+   ```
+
+4. Mở Package Manager Console trong Visual Studio, chọn `MiniSuperMarket.API` làm Default project rồi chạy:
+
+   ```powershell
    Update-Database
    ```
-   Kết quả: tạo CSDL `ThienAnSupermarketDb` với 3 bảng `Categories` (5 dòng mẫu), `Products`, `Customers` (3 dòng mẫu).
-3. Nếu lỗi gói NuGet: `dotnet nuget locals all --clear` rồi restore lại.
 
-## 4. Chạy và kiểm thử
-1. Chuột phải Solution → *Configure Startup Projects* → chọn **Multiple startup projects**: API và WinForm đều *Start* (API chạy trước).
-2. Swagger: `POST /api/auth/login` (`admin`/`123456` hoặc `cashier`/`123456`) → copy token → nút **Authorize** → dán `Bearer <token>`.
-3. WinForm: đăng nhập, thử Thêm/Sửa/Xóa/Tìm kiếm nhóm hàng và khách hàng. Tắt cả hai ứng dụng rồi mở lại: dữ liệu vẫn còn.
+   Hoặc dùng CLI từ thư mục solution:
 
-| Chức năng | Admin | Cashier |
-|---|---|---|
-| Xem/Thêm/Sửa nhóm hàng | ✅ | ✅ |
-| Xóa nhóm hàng | ✅ | ❌ 403 |
-| Khách hàng (CRUD) | ✅ | ✅ |
-| Vai trò (CRUD) | ✅ | ❌ 403 |
+   ```powershell
+   dotnet ef database update --project MiniSuperMarket.API
+   ```
 
-## 5. Tác giả
-Họ tên sinh viên: Lê Minh Trường — Mã sinh viên: 2124110110 — Lớp học phần: CCQ2411D
+   Migration Buổi 4 là migration khởi tạo toàn bộ sáu bảng. Nếu database Buổi 3 đã có các bảng `Categories`, `Products` hoặc `Customers` mà chưa có migration history tương ứng, hãy sao lưu dữ liệu trước và tạo database mới/đổi tên database trong connection string trước khi áp dụng migration này. Không chạy migration khởi tạo trên database đang có bảng cùng tên.
+
+5. Mở solution trong Visual Studio và đặt API cùng WinForms chạy trong Multiple Startup Projects. API dùng HTTPS `https://localhost:7123`.
+6. Đăng nhập bằng một tài khoản mẫu ở trên.
+
+## API đáng chú ý
+
+- `POST /api/auth/login`
+- `GET /api/products/with-category`
+- `GET /api/products/barcode/{barcode}`
+- `POST /api/orders` (Admin/Cashier)
+- `GET /api/reports/quick?date=2026-10-01` (Admin)
+- `GET/POST /api/users` (Admin)
+
+Swagger chỉ bật trong môi trường Development.
+
+## Chủ đề và tác giả
+
+Lê Minh Trường — MSSV 2124110110 — lớp CCQ2411D.

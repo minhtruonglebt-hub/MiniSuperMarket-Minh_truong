@@ -6,10 +6,10 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// ===== Cấu hình xác thực JWT Bearer =====
 var jwtSecret = builder.Configuration["JwtSettings:Secret"]
-                ?? "SupermarketSecretKeyDoAnMonHoc2026SecureString!!";
+    ?? throw new InvalidOperationException("Configure JwtSettings:Secret before starting the API.");
+if (Encoding.UTF8.GetByteCount(jwtSecret) < 32)
+    throw new InvalidOperationException("JwtSettings:Secret must contain at least 32 UTF-8 bytes.");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -21,27 +21,17 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSecret)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         ValidateIssuer = false,
         ValidateAudience = false
     };
 });
-
-// Cho phép bỏ trống các trường có giá trị mặc định (vd: MembershipRank = "Chuẩn");
-// các trường bắt buộc đã có [Required] tường minh trên Model
-builder.Services.AddControllers(options =>
-{
-    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
-});
-
-// ===== Buổi 3: Đăng ký DbContext (SQL Server) qua Dependency Injection =====
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<SupermarketDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
+builder.Services.AddAuthorization();
+builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection before starting the API.");
+builder.Services.AddDbContext<SupermarketDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddEndpointsApiExplorer();
-
-// ===== Swagger có nút Authorize để dán token =====
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -52,37 +42,19 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        In = ParameterLocation.Header,
-        Description = "Nhập: Bearer {token}   (nhớ có chữ Bearer và 1 dấu cách)"
+        Name = "Authorization", Type = SecuritySchemeType.ApiKey, Scheme = "Bearer",
+        In = ParameterLocation.Header, Description = "Nhập: Bearer {token}"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            Array.Empty<string>()
-        }
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
     });
 });
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 app.UseHttpsRedirection();
-
-// Bắt buộc UseAuthentication trước UseAuthorization
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();

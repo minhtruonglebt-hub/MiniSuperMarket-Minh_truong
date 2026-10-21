@@ -1,33 +1,33 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace MiniSuperMarket.API.Models
 {
-    // Thực thể Sản phẩm (bảng Products) - CRUD đầy đủ sẽ làm ở Buổi 4
     [Table("Products")]
     public class Product
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ProductId { get; set; }
 
-        [Required(ErrorMessage = "Mã vạch sản phẩm không được trống")]
-        [StringLength(50)]
+        [Required, StringLength(50)]
         public string Barcode { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
-        [StringLength(150)]
+        [Required, StringLength(150)]
         public string ProductName { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; } // Giá bán
+        [Column(TypeName = "decimal(18,2)"), Range(0, double.MaxValue)]
+        public decimal Price { get; set; }
 
-        public int StockQuantity { get; set; } // Số lượng tồn kho
+        [Range(0, int.MaxValue)]
+        public int StockQuantity { get; set; }
 
-        // Khóa ngoại liên kết tới bảng Categories
         public int CategoryId { get; set; }
 
-        [ForeignKey("CategoryId")]
+        [ForeignKey(nameof(CategoryId))]
         public virtual Category? Category { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
     }
 }

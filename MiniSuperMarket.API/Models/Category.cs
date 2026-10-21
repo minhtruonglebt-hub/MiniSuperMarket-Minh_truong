@@ -4,23 +4,19 @@ using System.Text.Json.Serialization;
 
 namespace MiniSuperMarket.API.Models
 {
-    // Thực thể Nhóm hàng hóa (bảng Categories trong SQL Server)
     [Table("Categories")]
     public class Category
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Tự tăng (Identity 1,1)
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int CategoryId { get; set; }
 
-        [Required(ErrorMessage = "Tên nhóm hàng không được để trống!")]
-        [StringLength(100, ErrorMessage = "Tên nhóm hàng không vượt quá 100 ký tự")]
+        [Required(ErrorMessage = "Tên nhóm hàng không được để trống!"), StringLength(100)]
         public string CategoryName { get; set; } = string.Empty;
 
         [StringLength(255)]
         public string? Description { get; set; }
 
-        // Quan hệ 1 - N: Một nhóm hàng có nhiều sản phẩm
-        [JsonIgnore] // Tránh lỗi lặp vòng vô tận khi serialize JSON
-        public virtual ICollection<Product>? Products { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }

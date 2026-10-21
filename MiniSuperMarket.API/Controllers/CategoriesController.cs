@@ -57,6 +57,7 @@ namespace MiniSuperMarket.API.Controllers
 
         // 4. CREATE: POST /api/categories
         [HttpPost]
+        [Authorize(Roles = "Admin,Warehouse")]
         public async Task<IActionResult> Create([FromBody] Category newCat)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -71,6 +72,7 @@ namespace MiniSuperMarket.API.Controllers
 
         // 5. UPDATE: PUT /api/categories/1
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin,Warehouse")]
         public async Task<IActionResult> Update(int id, [FromBody] Category updateCat)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

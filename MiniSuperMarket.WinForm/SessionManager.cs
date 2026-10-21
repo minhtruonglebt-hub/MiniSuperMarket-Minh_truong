@@ -2,16 +2,18 @@ namespace MiniSuperMarket.WinForm
 {
     public static class SessionManager
     {
-        // JWT Token nhận từ Server
         public static string JwtToken { get; set; } = string.Empty;
-
-        // Tên đăng nhập hiện tại
         public static string CurrentUsername { get; set; } = string.Empty;
-
-        // Vai trò người dùng: Admin / Cashier / Warehouse
+        public static string CurrentFullName { get; set; } = string.Empty;
         public static string CurrentRole { get; set; } = string.Empty;
-
-        // Địa chỉ API - chỉnh port nếu khác (xem launchSettings.json của API)
         public const string ApiBaseUrl = "https://localhost:7123/api/";
+
+        public static void Clear()
+        {
+            JwtToken = string.Empty;
+            CurrentUsername = string.Empty;
+            CurrentFullName = string.Empty;
+            CurrentRole = string.Empty;
+        }
     }
 }
