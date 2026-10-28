@@ -8,6 +8,53 @@ namespace MiniSuperMarket.WinForm
         {
             InitializeComponent();
             ClearInputs();
+            BackColor = Color.FromArgb(244, 246, 249);
+            dgvCustomers.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            dgvCustomers.BackgroundColor = Color.White;
+            dgvCustomers.RowHeadersVisible = false;
+            dgvCustomers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvCustomers.ColumnHeadersHeight = 38;
+            dgvCustomers.RowTemplate.Height = 32;
+            Resize += (_, _) => LayoutManagementControls();
+            LayoutManagementControls();
+        }
+
+        private void LayoutManagementControls()
+        {
+            const int left = 16, gap = 10;
+            var width = Math.Max(0, ClientSize.Width - left * 2);
+            txtKeyword.SetBounds(left, 12, Math.Max(200, Math.Min(360, width - 220)), 30);
+            btnSearch.SetBounds(txtKeyword.Right + gap, 11, 104, 32);
+            btnLoad.SetBounds(btnSearch.Right + gap, 11, 104, 32);
+
+            var editorTop = Math.Max(112, ClientSize.Height - 168);
+            dgvCustomers.SetBounds(left, 52, width, Math.Max(80, editorTop - 62));
+
+            var idLabelWidth = 68;
+            lblCustomerId.SetBounds(left, editorTop + 4, idLabelWidth, 28);
+            txtCustomerId.SetBounds(left + idLabelWidth, editorTop, 72, 30);
+            var nameX = left + idLabelWidth + 82;
+            lblCustomerName.SetBounds(nameX, editorTop + 4, 58, 28);
+            var nameInputWidth = Math.Max(180, width * 37 / 100);
+            txtCustomerName.SetBounds(nameX + 62, editorTop, nameInputWidth, 30);
+            var phoneX = txtCustomerName.Right + gap;
+            lblPhoneNumber.SetBounds(phoneX, editorTop + 4, 46, 28);
+            txtPhoneNumber.SetBounds(phoneX + 50, editorTop, Math.Max(110, ClientSize.Width - phoneX - 66), 30);
+
+            var secondRow = editorTop + 42;
+            lblAddress.SetBounds(left, secondRow + 4, idLabelWidth, 28);
+            var rewardX = Math.Max(left + 360, width * 62 / 100);
+            txtAddress.SetBounds(left + idLabelWidth, secondRow, Math.Max(160, rewardX - left - idLabelWidth - gap), 30);
+            lblRewardPoints.SetBounds(rewardX, secondRow + 4, 52, 28);
+            txtRewardPoints.SetBounds(rewardX + 56, secondRow, 100, 30);
+
+            var thirdRow = editorTop + 82;
+            lblMembershipRank.SetBounds(left, thirdRow + 4, 94, 28);
+            txtMembershipRank.SetBounds(left + 98, thirdRow, 160, 30);
+            var actionY = editorTop + 120;
+            btnAdd.SetBounds(left, actionY, 112, 34);
+            btnUpdate.SetBounds(btnAdd.Right + 10, actionY, 120, 34);
+            btnDelete.SetBounds(btnUpdate.Right + 10, actionY, 112, 34);
         }
 
         private async void FormCustomerManagement_Load(object? sender, EventArgs e)

@@ -45,21 +45,34 @@ namespace MiniSuperMarket.WinForm
 
             _grid.Dock = DockStyle.Fill; _grid.ReadOnly = true; _grid.AllowUserToAddRows = false; _grid.AllowUserToDeleteRows = false;
             _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill; _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            _grid.MultiSelect = false; _grid.RowHeadersVisible = false; _grid.BackgroundColor = Color.White;
+            _grid.MultiSelect = false; _grid.RowHeadersVisible = true; _grid.RowHeadersWidth = 54; _grid.BackgroundColor = Color.White;
+            _grid.EnableHeadersVisualStyles = false;
+            _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(240, 243, 248);
+            _grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(35, 43, 58);
+            _grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            _grid.ColumnHeadersHeight = 38;
+            _grid.RowTemplate.Height = 32;
+            _grid.RowHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            _grid.RowPostPaint += (_, e) =>
+            {
+                var bounds = new Rectangle(e.RowBounds.Left, e.RowBounds.Top, _grid.RowHeadersWidth, e.RowBounds.Height);
+                TextRenderer.DrawText(e.Graphics, (e.RowIndex + 1).ToString(), _grid.Font, bounds,
+                    Color.FromArgb(90, 98, 112), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            };
             _grid.CellClick += OnRowClick;
             Controls.Add(_grid);
 
-            var editor = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 160, ColumnCount = 4, RowCount = 3, Padding = new Padding(12), BackColor = Color.FromArgb(247, 248, 250) };
+            var editor = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 184, ColumnCount = 4, RowCount = 4, Padding = new Padding(12), BackColor = Color.FromArgb(247, 248, 250) };
             editor.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); editor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             editor.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); editor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 40)); editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 40)); editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+            editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 38)); editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 38)); editor.RowStyles.Add(new RowStyle(SizeType.Absolute, 38)); editor.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             AddField(editor, "Mã vạch", _barcode, 0, 0); AddField(editor, "Tên sản phẩm", _name, 2, 0);
             AddField(editor, "Giá bán", _price, 0, 1); AddField(editor, "Tồn kho", _stock, 2, 1); AddField(editor, "Nhóm hàng", _category, 0, 2, 3);
-            var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
+            var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false, Padding = new Padding(0, 4, 0, 0) };
             var add = Button("Thêm sản phẩm", Color.FromArgb(34, 139, 94)); add.Click += async (_, _) => await SaveAsync(false);
             var update = Button("Cập nhật", Color.FromArgb(41, 100, 180)); update.Click += async (_, _) => await SaveAsync(true);
             var clear = Button("Xóa chọn", Color.FromArgb(84, 92, 110)); clear.Click += (_, _) => ClearInputs();
-            actions.Controls.AddRange([add, update, clear]); editor.Controls.Add(actions, 3, 2);
+            actions.Controls.AddRange([add, update, clear]); editor.Controls.Add(actions, 0, 3); editor.SetColumnSpan(actions, 4);
             Controls.Add(editor);
         }
 
@@ -89,8 +102,30 @@ namespace MiniSuperMarket.WinForm
                 if (_grid.Columns[nameof(ProductViewDto.StockQuantity)] != null) _grid.Columns[nameof(ProductViewDto.StockQuantity)]!.HeaderText = "Tồn kho";
                 if (_grid.Columns[nameof(ProductViewDto.CategoryName)] != null) _grid.Columns[nameof(ProductViewDto.CategoryName)]!.HeaderText = "Nhóm hàng";
                 if (_grid.Columns[nameof(ProductViewDto.CategoryId)] != null) _grid.Columns[nameof(ProductViewDto.CategoryId)]!.Visible = false;
+                SetColumn(nameof(ProductViewDto.ProductId), "Mã SP", 65, 8);
+                SetColumn(nameof(ProductViewDto.Barcode), "Mã vạch", 145, 17);
+                SetColumn(nameof(ProductViewDto.ProductName), "Tên sản phẩm", 210, 27);
+                SetColumn(nameof(ProductViewDto.Price), "Đơn giá", 115, 14);
+                SetColumn(nameof(ProductViewDto.StockQuantity), "Tồn kho", 95, 11);
+                SetColumn(nameof(ProductViewDto.CategoryName), "Nhóm hàng", 190, 23);
             }
             catch (Exception ex) { MessageBox.Show("Không tải được sản phẩm: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        private void SetColumn(string name, string header, int minimumWidth, float fillWeight)
+        {
+            var column = _grid.Columns[name];
+            if (column == null) return;
+            column.HeaderText = header;
+            column.MinimumWidth = minimumWidth;
+            column.FillWeight = fillWeight;
+            column.DefaultCellStyle.Alignment = name is nameof(ProductViewDto.Price) or nameof(ProductViewDto.StockQuantity)
+                ? DataGridViewContentAlignment.MiddleRight
+                : DataGridViewContentAlignment.MiddleLeft;
+            column.HeaderCell.Style.Alignment = name is nameof(ProductViewDto.Price) or nameof(ProductViewDto.StockQuantity)
+                ? DataGridViewContentAlignment.MiddleRight
+                : DataGridViewContentAlignment.MiddleLeft;
+            column.DefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
         }
 
         private void OnRowClick(object? sender, DataGridViewCellEventArgs e)

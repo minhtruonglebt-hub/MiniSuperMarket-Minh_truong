@@ -74,7 +74,7 @@ namespace MiniSuperMarket.WinForm
             _barcode.Clear();
             try
             {
-                using var response = await ApiClientService.Client.GetAsync($"products/barcode/{Uri.EscapeDataString(barcode)}");
+                using var response = await ApiClientService.Client.GetAsync($"ado-products/barcode/{Uri.EscapeDataString(barcode)}");
                 if (!response.IsSuccessStatusCode) { MessageBox.Show(await ApiClientService.GetErrorMessageAsync(response), "Không tìm thấy", MessageBoxButtons.OK, MessageBoxIcon.Information); _barcode.Focus(); return; }
                 var product = await response.Content.ReadFromJsonAsync<ProductViewDto>();
                 if (product == null) return;
@@ -128,7 +128,7 @@ namespace MiniSuperMarket.WinForm
             var payload = new { CustomerId = _customer?.CustomerId, Items = _cart.Select(x => new { ProductId = x.Product.ProductId, Quantity = x.Quantity }).ToList() };
             try
             {
-                using var response = await ApiClientService.Client.PostAsJsonAsync("orders", payload);
+                using var response = await ApiClientService.Client.PostAsJsonAsync("checkout", payload);
                 if (!response.IsSuccessStatusCode) { MessageBox.Show(await ApiClientService.GetErrorMessageAsync(response), "Thanh toán thất bại", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
                 var result = await response.Content.ReadFromJsonAsync<CheckoutResult>();
                 MessageBox.Show($"Thanh toán thành công.\nHóa đơn: {result?.OrderCode}\nTổng tiền: {result?.FinalAmount:N0} ₫\nĐiểm cộng: {result?.RewardPoints}", "Hoàn tất", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -7,6 +7,41 @@ namespace MiniSuperMarket.WinForm
         public FormCategoryManagement()
         {
             InitializeComponent();
+            BackColor = Color.FromArgb(244, 246, 249);
+            dgvCategories.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            dgvCategories.BackgroundColor = Color.White;
+            dgvCategories.RowHeadersVisible = false;
+            dgvCategories.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvCategories.ColumnHeadersHeight = 38;
+            dgvCategories.RowTemplate.Height = 32;
+            foreach (var control in new Control[] { lblRole, txtKeyword, btnSearch, btnReload })
+                control.Anchor = AnchorStyles.Top | AnchorStyles.Left | (control == txtKeyword ? AnchorStyles.Right : 0);
+            Resize += (_, _) => LayoutManagementControls();
+            LayoutManagementControls();
+        }
+
+        private void LayoutManagementControls()
+        {
+            const int left = 16, gap = 10, buttonWidth = 104;
+            var width = Math.Max(0, ClientSize.Width - left * 2);
+            lblRole.Location = new Point(left, 10);
+            txtKeyword.SetBounds(left, 42, Math.Max(180, width - buttonWidth * 2 - gap * 2), 30);
+            btnSearch.SetBounds(txtKeyword.Right + gap, 41, buttonWidth, 32);
+            btnReload.SetBounds(btnSearch.Right + gap, 41, buttonWidth, 32);
+
+            var editorY = Math.Max(136, ClientSize.Height - 96);
+            dgvCategories.SetBounds(left, 84, width, Math.Max(80, editorY - 100));
+            lblId.SetBounds(left, editorY + 4, 36, 28);
+            txtId.SetBounds(left + 40, editorY, 62, 30);
+            lblName.SetBounds(left + 116, editorY + 4, 112, 28);
+            txtName.SetBounds(left + 230, editorY, Math.Max(120, width * 32 / 100), 30);
+            var descLabelX = txtName.Right + gap;
+            lblDesc.SetBounds(descLabelX, editorY + 4, 48, 28);
+            txtDesc.SetBounds(descLabelX + 50, editorY, Math.Max(100, ClientSize.Width - descLabelX - 66), 30);
+            var actionY = editorY + 42;
+            btnAdd.SetBounds(left, actionY, 112, 34);
+            btnUpdate.SetBounds(btnAdd.Right + 10, actionY, 120, 34);
+            btnDelete.SetBounds(btnUpdate.Right + 10, actionY, 120, 34);
         }
 
         private async void FormCategoryManagement_Load(object? sender, EventArgs e)

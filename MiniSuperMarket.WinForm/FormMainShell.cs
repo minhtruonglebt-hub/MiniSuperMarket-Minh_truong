@@ -24,10 +24,26 @@ namespace MiniSuperMarket.WinForm
 
         private void BuildLayout()
         {
+            // Use a real two-column layout so the fixed navigation bar never
+            // covers the left edge of the content when child forms are embedded.
+            var shell = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                BackColor = BackColor
+            };
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 230));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            Controls.Add(shell);
+
             _sidebar.Dock = DockStyle.Left;
             _sidebar.Width = 230;
             _sidebar.BackColor = Color.FromArgb(24, 30, 48);
-            Controls.Add(_sidebar);
+            shell.Controls.Add(_sidebar, 0, 0);
 
             var logo = new Label { Text = "🛒 MiniMart POS", ForeColor = Color.White, Font = new Font("Segoe UI", 15, FontStyle.Bold), Dock = DockStyle.Top, Height = 76, TextAlign = ContentAlignment.MiddleCenter };
             _sidebar.Controls.Add(logo);
@@ -60,15 +76,13 @@ namespace MiniSuperMarket.WinForm
             _userInfo.TextAlign = ContentAlignment.MiddleRight;
             header.Controls.Add(_userInfo);
             header.Controls.Add(_title);
-            Controls.Add(header);
-
+            var content = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(244, 245, 247) };
             _workspace.Dock = DockStyle.Fill;
             _workspace.Padding = new Padding(18);
             _workspace.BackColor = Color.FromArgb(244, 245, 247);
-            Controls.Add(_workspace);
-            _workspace.BringToFront();
-            header.BringToFront();
-            _sidebar.BringToFront();
+            content.Controls.Add(_workspace);
+            content.Controls.Add(header);
+            shell.Controls.Add(content, 1, 0);
         }
 
         private void AddMenu(string key, string text, Action<object?, Button> action)

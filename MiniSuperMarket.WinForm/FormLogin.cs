@@ -11,9 +11,13 @@ namespace MiniSuperMarket.WinForm
         {
             InitializeComponent();
             lblHint.Text = "Thử: admin01 / 123456  |  cashier01 / 123456  |  ware01 / 123456";
-            ClientSize = new Size(440, 240);
-            lblHint.Location = new Point(30, 178);
-            lblHint.Size = new Size(380, 30);
+            ClientSize = new Size(460, 250);
+            lblUser.Location = new Point(34, 34);
+            txtUser.SetBounds(132, 30, 292, 30);
+            lblPass.Location = new Point(34, 82);
+            txtPass.SetBounds(132, 78, 292, 30);
+            btnLogin.SetBounds(132, 128, 292, 38);
+            lblHint.SetBounds(34, 184, 392, 38);
         }
 
         private async void btnLogin_Click(object sender, EventArgs e)
